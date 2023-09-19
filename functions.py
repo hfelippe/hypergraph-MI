@@ -3,6 +3,10 @@ import numpy as np
 import networkx as nx
 from scipy.special import loggamma
 
+def lGogchoose(N,K): 
+    """logarithm of binomial coefficient"""
+    return loggamma(N+1) - loggamma(N-K+1) - loggamma(K+1)
+
 def zero_log(x):
     """log of zero is zero"""
     if x <= 0: return 0
@@ -27,8 +31,9 @@ def graphNMI(N, S1, S2):
     H1H2 = ent([p1, 1-p1]) + ent([p2, 1-p2]) + 1e-100
     return 2.-2.*H12/H1H2
 
-def graphDCNMI(G1,G2):
+def graphDCNMI(G1, G2):
     """degree-corrected NMI between graphs G1 and G2"""
+    G1, G2 = graph_Gset(G1), graph_Gset(G2)
     adj1, adj2 = dict(G1.adjacency()), dict(G2.adjacency())
     N = len(adj1)
     num, denom = 0, 0
@@ -40,6 +45,88 @@ def graphDCNMI(G1,G2):
         num += H1H2 - H12
         denom += H1H2/2
     return num/denom
+
+def mesoNMI(G1, G2, partition):
+    """normalized mesoscale mutual information of graphs"""
+
+    def entropy_multiset(Gset, partition):
+        """entropy of individual multiset"""
+        E = len(Gset)
+        B = len(set(partition))
+        BC2 = B * (B - 1) / 2 # B choose 2
+        return lGogchoose(BC2 + B + E - 1, E)
+
+    def entropy_joint_multiset(G1, G2, partition):
+        """joint entropy of multisets G1 and G2"""
+        E1  = len(G1)
+        E2  = len(G2)
+        E12 = len(G1.intersection(G2))
+
+        B = len(set(partition))
+        BC2 = B * (B - 1) / 2
+        n = BC2 + B
+        k = E1 + E2 - E12
+        
+        return lGogchoose(n + k - 1, k)
+
+    def mesoMI(G1, G2, partition):
+        """mesoscale mutual information of graphs with respect to partition"""
+        H1  = entropy_multiset(G1, partition)
+        H2  = entropy_multiset(G2, partition)
+        H12 = entropy_joint_multiset(G1, G2, partition)
+        return H1 + H2 - H12
+        
+    def mesoMI_nonoverlap(G1, G2, partition):
+        """mesoMI of graphs without overlapping edges"""
+        N = len(partition) 
+        comms = sorted(list(set(partition))) 
+        B = len(comms)
+        # obtain dict of community-community edges
+        e1 = 0
+        edges1 = {}
+        for edge1 in G1:
+            i,j = edge1
+            r,s = sorted([partition[i],partition[j]]) 
+            if not((r,s) in edges1): 
+                edges1[(r,s)] = 0
+            edges1[(r,s)] += 1
+            e1 += 1      
+        e2 = 0
+        edges2 = {}
+        for edge2 in G2:
+            i,j = edge2
+            r,s = sorted([partition[i],partition[j]]) 
+            if not((r,s) in edges2): 
+                edges2[(r,s)] = 0
+            edges2[(r,s)] += 1
+            e2 += 1      
+        for r in set(partition):
+            for s in set(partition):
+                if r <= s:
+                    if not((r,s) in edges1):
+                        edges1[(r,s)] = 0
+                    if not((r,s) in edges2):
+                        edges2[(r,s)] = 0
+        e12 = 0
+        for r in set(partition):
+            for s in set(partition):
+                if r <= s:
+                    e12 += min(edges1[(r,s)], edges2[(r,s)])   
+        E1  = e1
+        E2  = e2
+        BC2 = B * (B - 1) / 2
+        E12 = e12
+        
+        n1, k1   = BC2 + B + E1 - 1, E1
+        n2, k2   = BC2 + B + E2 - 1, E2
+        n12, k12 = BC2 + B + E1 + E2 - 1, E1 + E2 - E12
+        
+        return lGogchoose(n1 + k1 - 1, k1) + lGogchoose(n2 + k2 - 1, k2) - lGogchoose(n12 + k12 - 1, k12)
+
+    ImesoG1G2 = mesoMI(G1, G2, partition)
+    ImesoE12  = mesoMI_nonoverlap(G1, G2, partition)
+    H1H2 = entropy_multiset(G1, partition) + entropy_multiset(G2, partition) 
+    return (ImesoG1G2 - ImesoE12) / (.5 * H1H2 - ImesoE12)
 
 def graph_Gset(Gset):
     """generate NetworkX Graph object from an edge set Gset"""
