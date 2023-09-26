@@ -7,6 +7,10 @@ def lGogchoose(N,K):
     """logarithm of binomial coefficient"""
     return loggamma(N+1) - loggamma(N-K+1) - loggamma(K+1)
 
+def lGogmultiset(N,K): 
+    """logarithm of multiset coefficient"""
+    return loggamma(N+K-1+1) - loggamma(K+1) - loggamma(N-1+1)
+
 def zero_log(x):
     """log of zero is zero"""
     if x <= 0: return 0
@@ -49,84 +53,52 @@ def graphDCNMI(G1, G2):
 def mesoNMI(G1, G2, partition):
     """normalized mesoscale mutual information of graphs"""
 
-    def entropy_multiset(Gset, partition):
-        """entropy of individual multiset"""
-        E = len(Gset)
-        B = len(set(partition))
-        BC2 = B * (B - 1) / 2 # B choose 2
-        return lGogchoose(BC2 + B + E - 1, E)
-
-    def entropy_joint_multiset(G1, G2, partition):
+    def get_E12(G1,G2,partition):
+        
+        e1,e2 = {},{}
+        groups = list(set(partition))
+        
+        for i,r in enumerate(groups):
+            for s in groups[i:]:
+                e1[(r,s)] = 0
+                e2[(r,s)] = 0
+        for edge in G1:
+            i,j = edge
+            r,s = sorted([partition[i],partition[j]])
+            e1[(r,s)] += 1
+        for edge in G2:
+            i,j = edge
+            r,s = sorted([partition[i],partition[j]])
+            e2[(r,s)] += 1
+        E12 = 0
+        for rs in e1:
+            E12 += min(e1[rs],e2[rs])
+            
+        return E12
+    
+    def H(G):
+        B = len(partition)
+        BC2 = B * (B - 1) / 2
+        return lGogmultiset(BC2 + B,len(G))
+        
+    def MI(G1, G2, E12):
         """joint entropy of multisets G1 and G2"""
+        B = len(partition)
+        BC2 = B * (B - 1) / 2
         E1  = len(G1)
         E2  = len(G2)
-        E12 = len(G1.intersection(G2))
-
-        B = len(set(partition))
-        BC2 = B * (B - 1) / 2
-        n = BC2 + B
-        k = E1 + E2 - E12
         
-        return lGogchoose(n + k - 1, k)
+        H1 = lGogmultiset(BC2 + B,E1)
+        H2 = lGogmultiset(BC2 + B,E2)
+        H12 = lGogmultiset(BC2 + B,E1+E2-E12)
 
-    def mesoMI(G1, G2, partition):
-        """mesoscale mutual information of graphs with respect to partition"""
-        H1  = entropy_multiset(G1, partition)
-        H2  = entropy_multiset(G2, partition)
-        H12 = entropy_joint_multiset(G1, G2, partition)
         return H1 + H2 - H12
-        
-    def mesoMI_nonoverlap(G1, G2, partition):
-        """mesoMI of graphs without overlapping edges"""
-        N = len(partition) 
-        comms = sorted(list(set(partition))) 
-        B = len(comms)
-        # obtain dict of community-community edges
-        e1 = 0
-        edges1 = {}
-        for edge1 in G1:
-            i,j = edge1
-            r,s = sorted([partition[i],partition[j]]) 
-            if not((r,s) in edges1): 
-                edges1[(r,s)] = 0
-            edges1[(r,s)] += 1
-            e1 += 1      
-        e2 = 0
-        edges2 = {}
-        for edge2 in G2:
-            i,j = edge2
-            r,s = sorted([partition[i],partition[j]]) 
-            if not((r,s) in edges2): 
-                edges2[(r,s)] = 0
-            edges2[(r,s)] += 1
-            e2 += 1      
-        for r in set(partition):
-            for s in set(partition):
-                if r <= s:
-                    if not((r,s) in edges1):
-                        edges1[(r,s)] = 0
-                    if not((r,s) in edges2):
-                        edges2[(r,s)] = 0
-        e12 = 0
-        for r in set(partition):
-            for s in set(partition):
-                if r <= s:
-                    e12 += min(edges1[(r,s)], edges2[(r,s)])   
-        E1  = e1
-        E2  = e2
-        BC2 = B * (B - 1) / 2
-        E12 = e12
-        
-        n1, k1   = BC2 + B + E1 - 1, E1
-        n2, k2   = BC2 + B + E2 - 1, E2
-        n12, k12 = BC2 + B + E1 + E2 - 1, E1 + E2 - E12
-        
-        return lGogchoose(n1 + k1 - 1, k1) + lGogchoose(n2 + k2 - 1, k2) - lGogchoose(n12 + k12 - 1, k12)
+    
+    Imeso = MI(G1,G2,get_E12(G1,G2,partition))
+    I0 = MI(G1,G2,0)
+    H1H2 = H(G1) + H(G2)
 
-    ImesoG1G2 = mesoMI(G1, G2, partition)
-    ImesoE12  = mesoMI_nonoverlap(G1, G2, partition)
-    H1H2 = entropy_multiset(G1, partition) + entropy_multiset(G2, partition) 
-    return (ImesoG1G2 - ImesoE12) / (.5 * H1H2 - ImesoE12)
+    return (Imeso - I0) / (.5 * H1H2 - I0)
 
 def graph_Gset(Gset):
     """generate NetworkX Graph object from an edge set Gset"""
@@ -178,36 +150,38 @@ def gen_SBM_set(N,kavg,B,eta):
 
 def typeI(Gset, eps):
     """Type I noise over nodes"""
-    N = 1 + max(max(edge) for edge in Gset) # number of nodes
     
-    # create NetworkX Graph object to further obtain nodes' neighbors
-    G = nx.Graph()
-    G.add_nodes_from(range(N))
-    G.add_edges_from(Gset)
-
+    adjlist = {}
+    for e in Gset:
+        i,j = e
+        if not(i in adjlist):
+            adjlist[i] = []
+        if not(j in adjlist):
+            adjlist[j] = []
+        adjlist[i].append(j)
+        adjlist[j].append(i)
+    N = len(adjlist)
+    
     # create placeholders for both the addition and removal of edges from graph G
     new_edges = set()
-    old_edges = list()
-    
-    # take the neighbors of all nodes
-    neighbors = [G.neighbors(i) for i in G.nodes()]
+    old_edges = set()
     
     # loop through epsilon*N nodes
-    for i in range(int(eps * N)):
-        for neigs in neighbors[i]:
-            if neigs > i: # take only neighbors j such that i < j for all pairs (i,j)
-                while True:
-                    to_add = (i, random.randint(i+1, N-1)) # randomly selects pairs (i,k) such that i < k
-                    if not(to_add in Gset) and not(to_add in new_edges):
-                        old_edges.append((i, neigs))
-                        new_edges.add(to_add)
-                        break
+    node_order = np.random.permutation(list(adjlist.keys()))
+    for i in node_order[:int(eps * N)]:
+        for neig in adjlist[i]:
+            repeated = True
+            while repeated == True:
+                to_add = tuple(sorted([i, random.randint(0, N-1)])) # randomly selects pairs (i,k) such that i < k
+                if not(to_add in new_edges) and not(to_add in Gset) and not(to_add in old_edges):
+                    old_edges.add(tuple(sorted([i,neig])))
+                    new_edges.add(to_add)
+                    repeated = False
+                    
+    Gset_new = Gset.difference(old_edges)
+    Gset_new = Gset_new.union(new_edges)
     
-    # remove and add the attacked edges to G
-    G.remove_edges_from(old_edges)
-    G.add_edges_from(new_edges)
-    
-    return set(G.edges()) # returns the set of edges of G
+    return Gset_new
 
 
 def typeII(Gset, eps):
