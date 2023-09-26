@@ -50,6 +50,27 @@ def graphDCNMI(G1, G2):
         denom += H1H2/2
     return num/denom
 
+def fit_sbm(gt_graph,B=None):
+    
+    step = max(int(250000 / gt_graph.num_edges()), 10)
+    if B is not None:
+        state = gt.inference.minimize_blockmodel_dl(gt_graph,state_args={'B':B,'deg_corr':False},multilevel_mcmc_args=dict(B_min=B, B_max=B))
+    else:
+        state = gt.inference.minimize_blockmodel_dl(gt_graph,state_args={'B':B,'deg_corr':False})
+    stable_max,n_stable = 30,0
+    max_sweeps = 500
+    
+    for _ in range(max_sweeps): 
+        ret = state.multiflip_mcmc_sweep(niter=step, beta=1e100)
+        if ret[0] < 1e-6:
+            n_stable += 1
+        else:
+            n_stable = 0
+        if n_stable > stable_max:
+            break
+    
+    return list(state.b)
+
 def mesoNMI(G1, G2, partition):
     """normalized mesoscale mutual information of graphs"""
 
