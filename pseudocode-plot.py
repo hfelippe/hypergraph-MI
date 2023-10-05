@@ -498,7 +498,7 @@ def greedy_modularity_communities(
 
 
 N = 100
-num_sims = 2
+num_sims = 3
 sim_names = ['graphNMI','graphDCNMI','jaccard','mesoNMI','mesoNMI','mesoNMI']
 epsilons = np.linspace(0., 1., 10)
 noise_types = ['typeI','typeII','typeIII']
@@ -564,6 +564,25 @@ for row in range(5):
             else:
                 means = [np.mean([eval(sim_measure)(G,Gnoisy,partition=partitions[curve]) for Gnoisy in samples]) for samples in noisy_graphs]
                 errors = [3*np.std([eval(sim_measure)(G,Gnoisy,partition=partitions[curve]) for Gnoisy in samples])/np.sqrt(len(samples)) for samples in noisy_graphs]
+
             ax[row, column].errorbar(x=epsilons, y=means, yerr=errors, label=sim_name, color=color)
 
-plt.savefig("plot.pdf", bbox_inches="tight");
+            if row==4 and column==0:
+                ax[row,column].set_xlabel(f'Fraction of nodes $\epsilon$\n\nType I')
+            if row==4 and column==1:
+                ax[row,column].set_xlabel(f'Fraction of edges $\epsilon$\n\nType II')
+            if row==4 and column==2:
+                ax[row,column].set_xlabel(f'Fraction of community-edges $\epsilon$\n\nType III')
+
+            if row==0 and column==2:
+                ax[row,column].set_ylabel(f"ER", rotation=0, labelpad=-200)
+            if row==1 and column==2:
+                ax[row,column].set_ylabel(f"BA", rotation=0, labelpad=-200)
+            if row==2 and column==2:
+                ax[row,column].set_ylabel(f"SBM\n($\mu=0.1$)", rotation=0, labelpad=-200)
+            if row==3 and column==2:
+                ax[row,column].set_ylabel(f"SBM\n($\mu=0.5$)", rotation=0, labelpad=-200)
+            if row==4 and column==2:
+                ax[row,column].set_ylabel(f"SBM\n($\mu=0.9$)", rotation=0, labelpad=-200)
+
+plt.savefig("5x3-panel-v02.pdf", bbox_inches="tight");
