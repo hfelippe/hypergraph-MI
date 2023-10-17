@@ -224,13 +224,14 @@ def typeI(Gset, eps):
     node_order = np.random.permutation(list(adjlist.keys()))
     for i in node_order[:int(eps * N)]:
         for neig in adjlist[i]:
-            repeated = True
-            while repeated == True:
-                to_add = tuple(sorted([i, random.randint(0, N-1)])) # randomly selects pairs (i,k) such that i < k
-                if not(to_add in new_edges) and not(to_add in Gset) and not(to_add in old_edges):
-                    old_edges.add(tuple(sorted([i,neig])))
-                    new_edges.add(to_add)
-                    repeated = False
+            if neig >= i:
+                repeated = True
+                while repeated == True:
+                    to_add = tuple(sorted([i, random.randint(0, N-1)])) # randomly selects pairs (i,k) such that i < k
+                    if not(to_add in new_edges) and not(to_add in Gset) and not(to_add in old_edges):
+                        old_edges.add(tuple(sorted([i,neig])))
+                        new_edges.add(to_add)
+                        repeated = False
                     
     Gset_new = Gset.difference(old_edges)
     Gset_new = Gset_new.union(new_edges)
