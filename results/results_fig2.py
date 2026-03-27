@@ -54,12 +54,12 @@ for n_sim in range(nsim):
                 for j in range(i, M.shape[1]):
                     e1=h1.get_edges(size=D+j)
                     e2=h2.get_edges(size=D+i) 
-                    M[j,i] = hNMI_proj(N, e1, e2, D+i)
+                    M[j,i] = hNMI_project(N, e1, e2, D+i)
             for i in range(M.shape[0]):
                 for j in range(i+1, M.shape[1]):
                     e1=h2.get_edges(size=D+j)
                     e2=h1.get_edges(size=D+i) 
-                    M[i,j] = hNMI_proj(N, e1, e2, D+i)
+                    M[i,j] = hNMI_project(N, e1, e2, D+i)
            
             Msim.append(M)
             
@@ -128,12 +128,12 @@ for n_sim in range(nsim):
                 for j in range(i, M.shape[1]):
                     e1=h1.get_edges(size=D+j)
                     e2=h2.get_edges(size=D+i) 
-                    M[j,i] = hNMI_proj(N, e1, e2, D+i)
+                    M[j,i] = hNMI_project(N, e1, e2, D+i)
             for i in range(M.shape[0]):
                 for j in range(i+1, M.shape[1]):
                     e1=h2.get_edges(size=D+j)
                     e2=h1.get_edges(size=D+i) 
-                    M[i,j] = hNMI_proj(N, e1, e2, D+i)
+                    M[i,j] = hNMI_project(N, e1, e2, D+i)
            
             Msim.append(M)
             
