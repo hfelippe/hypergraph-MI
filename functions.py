@@ -1,12 +1,10 @@
 import numpy as np
 import pickle
 import math
-
+import random
 from collections import Counter
 from scipy.special import binom
 from mpmath import loggamma
-
-import random
 
 def logchoose(n,k): # using mpmath's loggamma
     """log binomial coefficient"""
