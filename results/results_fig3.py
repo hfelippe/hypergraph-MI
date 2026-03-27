@@ -282,5 +282,5 @@ Ms.append(M)
 matrices_NMIs.append((M,IB,IC))
 
 ## save the heatmaps and bars -- complicated data structure requires pickle
-with open("results_blocknested_heatmap-NMIalign-NMI-cross.pkl", 'wb') as file:
-    pickle.dump(matrices_NMIs, file)
+#with open("results_blocknested_heatmap-NMIalign-NMI-cross.pkl", 'wb') as file:
+#    pickle.dump(matrices_NMIs, file)
