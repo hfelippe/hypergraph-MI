@@ -1,10 +1,13 @@
 import numpy as np
 import pickle
 import math
-import random
+
 from collections import Counter
+from itertools import combinations
 from scipy.special import binom
 from mpmath import loggamma
+
+import random
 
 def logchoose(n,k): # using mpmath's loggamma
     """log binomial coefficient"""
@@ -24,7 +27,7 @@ def entropy(probabilities):
 
 def project_subsets(e, l):
     """returns unique size l subsets of tuples in the (hyper)edgeset e"""
-    from itertools import combinations
+    #from itertools import combinations
     if isinstance(e, tuple): # if e is a single tuple, wrap it in a list to handle it uniformly
         e = [e]
     return {combo for edge in e for combo in combinations(sorted(edge), l)} # sorted garantees order
@@ -165,7 +168,8 @@ def get_projections(G,layers,partition=None):
         layers_to_check = [l for l in layers if l <= k]
 
         for l in layers_to_check:
-            for tup in itertools.combinations(list(e),l):
+            #for tup in itertools.combinations(list(e),l):
+            for tup in combinations(list(e),l):
                 P[l].add(tup)
 
     if partition is not None:
@@ -329,7 +333,7 @@ def CE_matrices(N,G1,G2,partition=None,max_proj_count=1000000):
 
     return M1given2,M2given1
 
-def NMIaligned(G1,G2,partition=None):
+def NMIalign(G1,G2,partition=None):
     """
     compute Ialigned measure between hypergraph sets G1,G2 over N nodes
     """
