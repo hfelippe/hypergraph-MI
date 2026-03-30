@@ -40,7 +40,7 @@ for n_sim in range(nsim):
 
         ###Computation of metrics (matrix similarity, all I metrics)
         IA=NMI_Bulk(N,G1,G2)
-        IB= NMIaligned(G1,G2,partition=None)
+        IB= NMIalign(G1,G2,partition=None)
        
         IAsim.append(IA),IBsim.append(IB)
         
@@ -114,7 +114,7 @@ for n_sim in range(nsim):
 
         ###Computation of metrics (matrix similarity, all I metrics)
         IA=NMI_Bulk(N,G1,G2)
-        IB=NMIaligned(G1,G2,partition=None)
+        IB=NMIalign(G1,G2,partition=None)
         
         IAsim.append(IA),IBsim.append(IB)
         
